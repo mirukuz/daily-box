@@ -11,7 +11,7 @@ public final class Store: ObservableObject {
     public init(directory: URL? = nil) {
         self.directory = directory ?? Self.defaultDirectory()
         self.record = DayRecord.today()
-        self.record = load(from: directory ?? Self.defaultDirectory())
+        self.record = load(from: self.directory)
     }
 
     // MARK: - Public
@@ -48,7 +48,7 @@ public final class Store: ObservableObject {
         save()
     }
 
-    public func removeItem(_ text: String, from section: Section) {
+    private func removeItem(_ text: String, from section: Section) {
         switch section {
         case .todo:  record.todo.removeAll { $0 == text }
         case .doing: record.doing.removeAll { $0 == text }
