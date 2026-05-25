@@ -9,6 +9,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainPanel: FloatingPanel<MainView>?
     private var boxPanel: BoxPanel?
     private var summaryWindow: SummaryWindow?
+    private var mainPanelObserver: NSObjectProtocol?
+    private var boxPanelObserver: NSObjectProtocol?
 
     private let mainPanelSize = CGSize(width: 280, height: 400)
 
@@ -42,7 +44,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.setFrameOrigin(NSPoint(x: x, y: y))
         panel.makeKeyAndOrderFront(nil)
 
-        NotificationCenter.default.addObserver(
+        if let old = mainPanelObserver { NotificationCenter.default.removeObserver(old) }
+        mainPanelObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didMoveNotification,
             object: panel,
             queue: .main
@@ -67,7 +70,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         box.setFrameOrigin(NSPoint(x: x, y: y))
         box.makeKeyAndOrderFront(nil)
 
-        NotificationCenter.default.addObserver(
+        if let old = boxPanelObserver { NotificationCenter.default.removeObserver(old) }
+        boxPanelObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didMoveNotification,
             object: box,
             queue: .main
@@ -110,10 +114,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         boxPanel?.close()
         boxPanel = nil
 
-        let targetOrigin = store.record.windowPosition
+        let rawOrigin = store.record.windowPosition
+        let screen = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let targetOrigin = CGPoint(
+            x: max(0, min(rawOrigin.x, screen.width - mainPanelSize.width)),
+            y: max(0, min(rawOrigin.y, screen.height - mainPanelSize.height))
+        )
         CloseAnimator.open(panel: panel, targetSize: mainPanelSize, targetOrigin: targetOrigin) {}
 
-        NotificationCenter.default.addObserver(
+        if let old = mainPanelObserver { NotificationCenter.default.removeObserver(old) }
+        mainPanelObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didMoveNotification,
             object: panel,
             queue: .main
