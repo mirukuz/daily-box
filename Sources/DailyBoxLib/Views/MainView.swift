@@ -68,10 +68,14 @@ public struct MainView: View {
         .frame(width: 280)
     }
 
-    private var formattedDate: String {
+    private static let dateFormatter: DateFormatter = {
         let fmt = DateFormatter()
         fmt.dateFormat = "EEE, MMM d"
-        return fmt.string(from: Date())
+        return fmt
+    }()
+
+    private var formattedDate: String {
+        Self.dateFormatter.string(from: Date())
     }
 
     private var isFriday: Bool {
