@@ -27,7 +27,7 @@ public struct KanbanSectionView: View {
             Text(section.label)
                 .font(.system(size: 9, weight: .bold))
                 .kerning(1.0)
-                .foregroundColor(labelColor)
+                .foregroundColor(section.color)
                 .padding(.horizontal, 8)
 
             // Items
@@ -74,14 +74,6 @@ public struct KanbanSectionView: View {
     }
 
     // MARK: - Private
-
-    private var labelColor: Color {
-        switch section {
-        case .todo:  return Color(red: 0.7, green: 0.7, blue: 1.0)
-        case .doing: return Color(red: 1.0, green: 0.75, blue: 0.3)
-        case .done:  return Color(red: 0.4, green: 0.85, blue: 0.55)
-        }
-    }
 
     private func startAdding() {
         isAddingItem = true

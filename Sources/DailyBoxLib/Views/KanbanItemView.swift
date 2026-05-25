@@ -13,7 +13,7 @@ public struct KanbanItemView: View {
     public var body: some View {
         HStack(spacing: 4) {
             Circle()
-                .fill(sectionColor.opacity(0.6))
+                .fill(section.color.opacity(0.6))
                 .frame(width: 5, height: 5)
             Text(text)
                 .font(.system(size: 11))
@@ -23,16 +23,9 @@ public struct KanbanItemView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(sectionColor.opacity(0.08))
+        .background(section.color.opacity(0.08))
         .cornerRadius(5)
         .draggable("\(section.rawValue):\(text)")
     }
 
-    private var sectionColor: Color {
-        switch section {
-        case .todo:  return Color(red: 0.7, green: 0.7, blue: 1.0)
-        case .doing: return Color(red: 1.0, green: 0.75, blue: 0.3)
-        case .done:  return Color(red: 0.4, green: 0.85, blue: 0.55)
-        }
-    }
 }
