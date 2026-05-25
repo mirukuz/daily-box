@@ -9,21 +9,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainPanel: FloatingPanel<MainView>?
     private var boxPanel: BoxPanel?
     private var summaryWindow: SummaryWindow?
+    private var markdownWindow: MarkdownHistoryWindow?
+    private var statusItem: NSStatusItem?
     private var mainPanelObserver: NSObjectProtocol?
     private var boxPanelObserver: NSObjectProtocol?
 
     private let mainPanelSize = CGSize(width: 280, height: 400)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        try? "launched".write(toFile: "/tmp/dailybox_launch.txt", atomically: true, encoding: .utf8)
         registerLoginItem()
+        setupStatusItem()
         if store.record.isClosed {
-            try? "showing box".write(toFile: "/tmp/dailybox_launch.txt", atomically: true, encoding: .utf8)
             showBoxPanel()
         } else {
-            try? "showing main".write(toFile: "/tmp/dailybox_launch.txt", atomically: true, encoding: .utf8)
             showMainPanel()
-            try? "main done".write(toFile: "/tmp/dailybox_launch.txt", atomically: true, encoding: .utf8)
         }
     }
 
@@ -41,17 +40,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let panel = FloatingPanel(content: view, width: 280)
         mainPanel = panel
 
-        let screen = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let saved = store.record.windowPosition
+        let mainScreen = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let topMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
         let initialHeight: CGFloat = 100
-        let defaultX = screen.maxX - mainPanelSize.width - rightMargin
-        let defaultY = screen.maxY - topMargin - initialHeight
+        let defaultX = mainScreen.maxX - mainPanelSize.width - rightMargin
+        let defaultY = mainScreen.maxY - topMargin - initialHeight
         let rawX = saved.x < 0 ? defaultX : saved.x
         let rawY = saved.y < 0 ? defaultY : saved.y
-        let x = max(0, min(rawX, screen.width - mainPanelSize.width))
-        let y = max(0, min(rawY, screen.height - mainPanelSize.height))
+        let screen = screenFrame(containing: CGPoint(x: rawX, y: rawY))
+        let x = max(screen.minX, min(rawX, screen.maxX - mainPanelSize.width))
+        let y = max(screen.minY, min(rawY, screen.maxY - mainPanelSize.height))
         panel.setFrameOrigin(NSPoint(x: x, y: y))
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -68,7 +68,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showBoxPanel() {
-        mainPanel?.close()
+        mainPanel?.orderOut(nil)
         mainPanel = nil
 
         let box = BoxPanel(date: store.record.date)
@@ -76,9 +76,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         boxPanel = box
 
         let origin = store.record.boxPosition
-        let screen = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let x = max(0, min(origin.x, screen.width - 52))
-        let y = max(0, min(origin.y, screen.height - 62))
+        let screen = screenFrame(containing: origin)
+        let x = max(screen.minX, min(origin.x, screen.maxX - 52))
+        let y = max(screen.minY, min(origin.y, screen.maxY - 62))
         box.setFrameOrigin(NSPoint(x: x, y: y))
         box.makeKeyAndOrderFront(nil)
 
@@ -127,10 +127,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         boxPanel = nil
 
         let rawOrigin = store.record.windowPosition
-        let screen = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        // Expand back onto the same screen the box is on
+        let screen = screenFrame(containing: boxOrigin)
         let targetOrigin = CGPoint(
-            x: max(0, min(rawOrigin.x, screen.width - mainPanelSize.width)),
-            y: max(0, min(rawOrigin.y, screen.height - mainPanelSize.height))
+            x: max(screen.minX, min(rawOrigin.x < 0 ? boxOrigin.x : rawOrigin.x, screen.maxX - mainPanelSize.width)),
+            y: max(screen.minY, min(rawOrigin.y < 0 ? boxOrigin.y : rawOrigin.y, screen.maxY - mainPanelSize.height))
         )
         CloseAnimator.open(panel: panel, targetSize: mainPanelSize, targetOrigin: targetOrigin) {}
 
@@ -153,6 +154,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         summaryWindow = SummaryWindow(text: text)
         summaryWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    // MARK: - Status Bar
+
+    private func setupStatusItem() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "tray.fill", accessibilityDescription: "DailyBox")
+            button.image?.isTemplate = true
+        }
+        let menu = NSMenu()
+        menu.addItem(withTitle: "View in Markdown", action: #selector(showMarkdownHistory), keyEquivalent: "")
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(withTitle: "Quit DailyBox", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        statusItem?.menu = menu
+    }
+
+    @objc private func showMarkdownHistory() {
+        let records = store.allRecords()
+        let markdown = formatHistoryMarkdown(records)
+        markdownWindow = MarkdownHistoryWindow(markdown: markdown)
+        markdownWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    // MARK: - Helpers
+
+    /// Returns the frame of the screen containing the given point, falling back to main screen.
+    private func screenFrame(containing point: CGPoint) -> NSRect {
+        NSScreen.screens.first { $0.frame.contains(point) }?.frame
+            ?? NSScreen.main?.frame
+            ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
     }
 
     // MARK: - Login Item

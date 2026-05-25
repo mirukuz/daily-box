@@ -70,6 +70,39 @@ public final class Store: ObservableObject {
         save()
     }
 
+    /// All saved day records sorted oldest-first, weekends excluded.
+    public func allRecords() -> [DayRecord] {
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: nil
+        )) ?? []
+        let cal = Calendar.current
+        return files
+            .filter { $0.pathExtension == "json" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .compactMap { url -> DayRecord? in
+                guard let data = try? Data(contentsOf: url),
+                      let rec = try? JSONDecoder().decode(DayRecord.self, from: data) else { return nil }
+                return rec
+            }
+            .filter { rec in
+                guard let date = DayRecord.date(from: rec.date) else { return true }
+                let w = cal.component(.weekday, from: date)
+                return w != 1 && w != 7  // exclude Sunday (1) and Saturday (7)
+            }
+    }
+
+    public func record(daysAgo: Int) -> DayRecord? {
+        guard daysAgo > 0 else { return nil }
+        let cal = Calendar.current
+        guard let date = cal.date(byAdding: .day, value: -daysAgo, to: Date()) else { return nil }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        let url = fileURL(for: fmt.string(from: date))
+        guard let data = try? Data(contentsOf: url),
+              let rec = try? JSONDecoder().decode(DayRecord.self, from: data) else { return nil }
+        return rec
+    }
+
     // MARK: - Week data (for summary)
 
     public func weekRecords() -> [DayRecord] {

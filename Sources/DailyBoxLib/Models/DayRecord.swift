@@ -36,6 +36,10 @@ public struct DayRecord: Codable, Equatable {
         dateFormatter.string(from: Date())
     }
 
+    public static func date(from string: String) -> Date? {
+        dateFormatter.date(from: string)
+    }
+
     private static let dateFormatter: DateFormatter = {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"

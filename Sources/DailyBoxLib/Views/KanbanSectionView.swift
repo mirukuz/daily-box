@@ -4,20 +4,25 @@ import SwiftUI
 public struct KanbanSectionView: View {
     let section: Section
     @ObservedObject var store: Store
+    var isEditable: Bool
+    var record: DayRecord?  // non-nil when viewing a past day read-only
     @State private var isAddingItem = false
     @State private var newItemText = ""
     @FocusState private var inputFocused: Bool
 
-    public init(section: Section, store: Store) {
+    public init(section: Section, store: Store, isEditable: Bool = true, record: DayRecord? = nil) {
         self.section = section
         self.store = store
+        self.isEditable = isEditable
+        self.record = record
     }
 
     private var items: [String] {
+        let src = record ?? store.record
         switch section {
-        case .todo:  return store.record.todo
-        case .doing: return store.record.doing
-        case .done:  return store.record.done
+        case .todo:  return src.todo
+        case .doing: return src.doing
+        case .done:  return src.done
         }
     }
 
@@ -36,41 +41,40 @@ public struct KanbanSectionView: View {
                     .padding(.horizontal, 6)
             }
 
-            // Inline add
-            if isAddingItem {
-                TextField("Add item...", text: $newItemText)
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.8))
-                    .textFieldStyle(.plain)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(5)
-                    .padding(.horizontal, 6)
-                    .focused($inputFocused)
-                    .onSubmit { commitAdd() }
-                    .onExitCommand { cancelAdd() }
-            } else {
-                // Tap-to-add hint
-                Text("+ add item...")
-                    .font(.system(size: 10))
-                    .foregroundColor(.white.opacity(0.2))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 2)
-                    .onTapGesture { startAdding() }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            // Inline add (today only)
+            if isEditable {
+                if isAddingItem {
+                    TextField("Add item...", text: $newItemText)
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.8))
+                        .textFieldStyle(.plain)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(5)
+                        .padding(.horizontal, 6)
+                        .focused($inputFocused)
+                        .onSubmit { commitAdd() }
+                        .onExitCommand { cancelAdd() }
+                } else {
+                    Text("+ add item...")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.2))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 2)
+                        .onTapGesture { startAdding() }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
         .padding(.vertical, 6)
         .dropDestination(for: String.self) { droppedItems, _ in
-            for payload in droppedItems {
-                handleDrop(payload)
-            }
+            guard isEditable else { return false }
+            for payload in droppedItems { handleDrop(payload) }
             return true
         }
-        // Tap anywhere in section to add
         .contentShape(Rectangle())
-        .onTapGesture { if !isAddingItem { startAdding() } }
+        .onTapGesture { if isEditable && !isAddingItem { startAdding() } }
     }
 
     // MARK: - Private

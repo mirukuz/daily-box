@@ -2,10 +2,16 @@
 import AppKit
 import SwiftUI
 
-public final class FloatingPanel<Content: View>: NSPanel {
+public protocol AutoResizable: AnyObject {
+    var autoResizeEnabled: Bool { get set }
+}
+
+public final class FloatingPanel<Content: View>: NSPanel, AutoResizable {
 
     private static var maxHeight: CGFloat { 600 }
     private let hostingController: NSHostingController<Content>
+    /// Suspend content-driven auto-resize during close/open animations.
+    public var autoResizeEnabled: Bool = true
 
     public init(content: Content, width: CGFloat = 280) {
         hostingController = NSHostingController(rootView: content)
@@ -85,6 +91,7 @@ public final class FloatingPanel<Content: View>: NSPanel {
     }
 
     private func fitToContent(width: CGFloat) {
+        guard autoResizeEnabled else { return }
         let natural = hostingController.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
         let newHeight = min(natural.height, Self.maxHeight)
         guard newHeight > 10, abs(newHeight - frame.height) > 1 else { return }
@@ -99,4 +106,22 @@ public final class FloatingPanel<Content: View>: NSPanel {
 
     public override var canBecomeKey: Bool { true }
     public override var canBecomeMain: Bool { false }
+
+    public override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.contains(.command) {
+            switch event.charactersIgnoringModifiers {
+            case "v":
+                return NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil)
+            case "a":
+                return NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+            case "c":
+                return NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
+            case "x":
+                return NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
+            default:
+                break
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
 }
