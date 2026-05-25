@@ -142,3 +142,47 @@ public enum Section: String, CaseIterable {
 
     public var label: String { rawValue.uppercased() }
 }
+
+public func formatWeeklySummary(_ records: [DayRecord]) -> String {
+    guard !records.isEmpty else { return "No data for this week." }
+
+    let dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    let fmt = DateFormatter()
+    fmt.dateFormat = "yyyy-MM-dd"
+
+    var lines: [String] = []
+
+    // Header: "Week of May 26 – May 30"
+    if let first = records.first, let last = records.last,
+       let firstDate = fmt.date(from: first.date),
+       let lastDate = fmt.date(from: last.date) {
+        let display = DateFormatter()
+        display.dateFormat = "MMM d"
+        lines.append("Week of \(display.string(from: firstDate)) – \(display.string(from: lastDate))")
+        lines.append("")
+    }
+
+    for record in records {
+        guard let date = fmt.date(from: record.date) else { continue }
+        let weekday = Calendar.current.component(.weekday, from: date)
+        // weekday: 1=Sun, 2=Mon, ..., 6=Fri
+        let name = weekday >= 2 && weekday <= 6 ? dayNames[weekday - 2] : record.date
+
+        let hasContent = !record.todo.isEmpty || !record.doing.isEmpty || !record.done.isEmpty
+        guard hasContent else { continue }
+
+        lines.append(name)
+        if !record.done.isEmpty {
+            lines.append("  Done:  " + record.done.joined(separator: ", "))
+        }
+        if !record.doing.isEmpty {
+            lines.append("  Doing: " + record.doing.joined(separator: ", "))
+        }
+        if !record.todo.isEmpty {
+            lines.append("  Todo:  " + record.todo.joined(separator: ", "))
+        }
+        lines.append("")
+    }
+
+    return lines.joined(separator: "\n").trimmingCharacters(in: .newlines)
+}
