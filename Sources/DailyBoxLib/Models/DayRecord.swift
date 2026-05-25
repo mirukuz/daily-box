@@ -33,10 +33,14 @@ public struct DayRecord: Codable, Equatable {
     }
 
     public static func todayString() -> String {
+        dateFormatter.string(from: Date())
+    }
+
+    private static let dateFormatter: DateFormatter = {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        return fmt.string(from: Date())
-    }
+        return fmt
+    }()
 }
 
 extension CGPoint: @retroactive Codable {
