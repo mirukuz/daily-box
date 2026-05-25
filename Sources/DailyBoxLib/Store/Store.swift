@@ -2,7 +2,6 @@
 import Foundation
 import Combine
 
-@MainActor
 public final class Store: ObservableObject {
     @Published public var record: DayRecord
 

@@ -2,8 +2,8 @@
 import AppKit
 import DailyBoxLib
 
+var appDelegate = AppDelegate()
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
-let delegate = AppDelegate()
-app.delegate = delegate
+app.delegate = appDelegate
 app.run()

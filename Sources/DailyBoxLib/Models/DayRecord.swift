@@ -16,7 +16,7 @@ public struct DayRecord: Codable, Equatable {
         doing: [String] = [],
         done: [String] = [],
         boxPosition: CGPoint = CGPoint(x: 100, y: 100),
-        windowPosition: CGPoint = CGPoint(x: 100, y: 100),
+        windowPosition: CGPoint = CGPoint(x: -1, y: -1),
         isClosed: Bool = false
     ) {
         self.date = date

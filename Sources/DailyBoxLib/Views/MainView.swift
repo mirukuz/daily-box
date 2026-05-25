@@ -40,15 +40,13 @@ public struct MainView: View {
             Divider()
                 .overlay(Color.white.opacity(0.1))
 
-            // Three sections
-            ScrollView {
-                VStack(spacing: 0) {
-                    KanbanSectionView(section: .todo, store: store)
-                    Divider().overlay(Color.white.opacity(0.06)).padding(.horizontal, 10)
-                    KanbanSectionView(section: .doing, store: store)
-                    Divider().overlay(Color.white.opacity(0.06)).padding(.horizontal, 10)
-                    KanbanSectionView(section: .done, store: store)
-                }
+            // Three sections — no fixed height, window auto-resizes to content
+            VStack(spacing: 0) {
+                KanbanSectionView(section: .todo, store: store)
+                Divider().overlay(Color.white.opacity(0.06)).padding(.horizontal, 10)
+                KanbanSectionView(section: .doing, store: store)
+                Divider().overlay(Color.white.opacity(0.06)).padding(.horizontal, 10)
+                KanbanSectionView(section: .done, store: store)
             }
 
             // Friday button

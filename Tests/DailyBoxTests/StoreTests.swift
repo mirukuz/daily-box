@@ -2,7 +2,6 @@
 import XCTest
 @testable import DailyBoxLib
 
-@MainActor
 final class StoreTests: XCTestCase {
     var tempDir: URL!
 
