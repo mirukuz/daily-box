@@ -60,7 +60,7 @@ public struct MainView: View {
                 .overlay(Color.white.opacity(0.1))
 
             if isViewingWeekend {
-                Text("休息 🌿")
+                Text("Take a break 🌿")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.white.opacity(0.35))
                     .frame(maxWidth: .infinity)
