@@ -12,8 +12,7 @@ let package = Package(
         ),
         .target(
             name: "DailyBoxLib",
-            path: "Sources/DailyBoxLib",
-            resources: [.process("Resources")]
+            path: "Sources/DailyBoxLib"
         ),
         .testTarget(
             name: "DailyBoxTests",
