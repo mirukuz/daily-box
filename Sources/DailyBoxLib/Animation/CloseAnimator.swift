@@ -17,23 +17,29 @@ public final class CloseAnimator {
             ctx.duration = 0.3
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.contentView?.animator().alphaValue = 0.2
-        }, completionHandler: {
+        }, completionHandler: { [weak panel] in
+            DispatchQueue.main.async {
+                guard let panel = panel else { return }
 
-            // Step 2+3: collapse to small square (0.7s)
-            let boxFrame = NSRect(
-                x: centerX - 26,
-                y: centerY - 31,
-                width: 52,
-                height: 62
-            )
-            NSAnimationContext.runAnimationGroup({ ctx in
-                ctx.duration = 0.7
-                ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                panel.animator().setFrame(boxFrame, display: true, animate: true)
-            }, completionHandler: {
-                let origin = boxFrame.origin
-                completion(CGPoint(x: origin.x, y: origin.y))
-            })
+                // Step 2+3: collapse to small square (0.7s)
+                let boxFrame = NSRect(
+                    x: centerX - 26,
+                    y: centerY - 31,
+                    width: 52,
+                    height: 62
+                )
+                NSAnimationContext.runAnimationGroup({ ctx in
+                    ctx.duration = 0.7
+                    ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                    panel.animator().setFrame(boxFrame, display: true, animate: true)
+                }, completionHandler: { [weak panel] in
+                    DispatchQueue.main.async {
+                        guard panel != nil else { return }
+                        let origin = boxFrame.origin
+                        completion(CGPoint(x: origin.x, y: origin.y))
+                    }
+                })
+            }
         })
     }
 
@@ -56,13 +62,19 @@ public final class CloseAnimator {
             ctx.duration = 0.8
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().setFrame(fullFrame, display: true, animate: true)
-        }, completionHandler: {
-            NSAnimationContext.runAnimationGroup({ ctx in
-                ctx.duration = 0.2
-                panel.contentView?.animator().alphaValue = 1.0
-            }, completionHandler: {
-                completion()
-            })
+        }, completionHandler: { [weak panel] in
+            DispatchQueue.main.async {
+                guard let panel = panel else { return }
+                NSAnimationContext.runAnimationGroup({ ctx in
+                    ctx.duration = 0.2
+                    panel.contentView?.animator().alphaValue = 1.0
+                }, completionHandler: { [weak panel] in
+                    DispatchQueue.main.async {
+                        guard panel != nil else { return }
+                        completion()
+                    }
+                })
+            }
         })
     }
 }
