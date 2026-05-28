@@ -1,6 +1,16 @@
 // Sources/DailyBoxLib/Models/DayRecord.swift
 import Foundation
 
+public struct SubItem: Codable, Hashable {
+    public var text: String
+    public var isChecked: Bool
+
+    public init(text: String, isChecked: Bool = false) {
+        self.text = text
+        self.isChecked = isChecked
+    }
+}
+
 public struct DayRecord: Codable, Equatable {
     public var date: String          // "YYYY-MM-DD"
     public var todo: [String]
@@ -9,6 +19,8 @@ public struct DayRecord: Codable, Equatable {
     public var boxPosition: CGPoint
     public var windowPosition: CGPoint
     public var isClosed: Bool
+    /// Sub-items keyed by parent item text.
+    public var details: [String: [SubItem]]
 
     public init(
         date: String,
@@ -17,7 +29,8 @@ public struct DayRecord: Codable, Equatable {
         done: [String] = [],
         boxPosition: CGPoint = CGPoint(x: 100, y: 100),
         windowPosition: CGPoint = CGPoint(x: -1, y: -1),
-        isClosed: Bool = false
+        isClosed: Bool = false,
+        details: [String: [SubItem]] = [:]
     ) {
         self.date = date
         self.todo = todo
@@ -26,6 +39,32 @@ public struct DayRecord: Codable, Equatable {
         self.boxPosition = boxPosition
         self.windowPosition = windowPosition
         self.isClosed = isClosed
+        self.details = details
+    }
+
+    // MARK: - Codable (with migration from legacy [String] sub-items)
+
+    enum CodingKeys: String, CodingKey {
+        case date, todo, doing, done, boxPosition, windowPosition, isClosed, details
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        date = try c.decode(String.self, forKey: .date)
+        todo = try c.decodeIfPresent([String].self, forKey: .todo) ?? []
+        doing = try c.decodeIfPresent([String].self, forKey: .doing) ?? []
+        done = try c.decodeIfPresent([String].self, forKey: .done) ?? []
+        boxPosition = try c.decodeIfPresent(CGPoint.self, forKey: .boxPosition) ?? CGPoint(x: 100, y: 100)
+        windowPosition = try c.decodeIfPresent(CGPoint.self, forKey: .windowPosition) ?? CGPoint(x: -1, y: -1)
+        isClosed = try c.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false
+        // Migrate: try modern [SubItem] first, fall back to legacy [String]
+        if let modern = try? c.decodeIfPresent([String: [SubItem]].self, forKey: .details) {
+            details = modern ?? [:]
+        } else if let legacy = try? c.decodeIfPresent([String: [String]].self, forKey: .details) {
+            details = (legacy ?? [:]).mapValues { $0.map { SubItem(text: $0) } }
+        } else {
+            details = [:]
+        }
     }
 
     public static func today() -> DayRecord {

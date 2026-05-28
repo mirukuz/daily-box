@@ -63,6 +63,12 @@ private func styledAttributedString(from markdown: String) -> NSAttributedString
                 .font: NSFont.boldSystemFont(ofSize: 12),
                 .foregroundColor: mutedColor
             ])
+        } else if line.hasPrefix("  - ") {
+            let text = String(line.dropFirst(4))
+            attr = NSAttributedString(string: "      ◦ " + text + "\n", attributes: [
+                .font: NSFont.systemFont(ofSize: 12),
+                .foregroundColor: mutedColor
+            ])
         } else if line.hasPrefix("- ") {
             let text = String(line.dropFirst(2))
             attr = NSAttributedString(string: "  • " + text + "\n", attributes: [
@@ -97,18 +103,17 @@ public func formatHistoryMarkdown(_ records: [DayRecord]) -> String {
 
         lines.append("## \(displayFmt.string(from: date))")
 
-        if !rec.done.isEmpty {
-            lines.append("**Done**")
-            rec.done.forEach { lines.append("- \($0)") }
+        func appendItems(_ items: [String]) {
+            for it in items {
+                lines.append("- \(it)")
+                if let subs = rec.details[it], !subs.isEmpty {
+                    subs.forEach { lines.append("  - \($0.isChecked ? "~~\($0.text)~~" : $0.text)") }
+                }
+            }
         }
-        if !rec.doing.isEmpty {
-            lines.append("**Doing**")
-            rec.doing.forEach { lines.append("- \($0)") }
-        }
-        if !rec.todo.isEmpty {
-            lines.append("**Todo**")
-            rec.todo.forEach { lines.append("- \($0)") }
-        }
+        if !rec.done.isEmpty  { lines.append("**Done**");  appendItems(rec.done) }
+        if !rec.doing.isEmpty { lines.append("**Doing**"); appendItems(rec.doing) }
+        if !rec.todo.isEmpty  { lines.append("**Todo**");  appendItems(rec.todo) }
         lines.append("")
     }
 

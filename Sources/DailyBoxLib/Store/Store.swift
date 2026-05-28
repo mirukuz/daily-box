@@ -47,12 +47,48 @@ public final class Store: ObservableObject {
         save()
     }
 
-    private func removeItem(_ text: String, from section: Section) {
+    public func removeItem(_ text: String, from section: Section) {
         switch section {
         case .todo:  record.todo.removeAll { $0 == text }
         case .doing: record.doing.removeAll { $0 == text }
         case .done:  record.done.removeAll { $0 == text }
         }
+    }
+
+    public func renameItem(_ old: String, to new: String, in section: Section) {
+        let trimmed = new.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, trimmed != old else { return }
+        switch section {
+        case .todo:  record.todo  = record.todo.map  { $0 == old ? trimmed : $0 }
+        case .doing: record.doing = record.doing.map { $0 == old ? trimmed : $0 }
+        case .done:  record.done  = record.done.map  { $0 == old ? trimmed : $0 }
+        }
+        if let subs = record.details.removeValue(forKey: old) {
+            record.details[trimmed] = subs
+        }
+        save()
+    }
+
+    public func addDetail(_ text: String, toItem item: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        record.details[item, default: []].append(SubItem(text: trimmed))
+        save()
+    }
+
+    public func removeDetail(_ text: String, fromItem item: String) {
+        record.details[item]?.removeAll { $0.text == text }
+        save()
+    }
+
+    public func toggleDetail(_ text: String, forItem item: String) {
+        guard let idx = record.details[item]?.firstIndex(where: { $0.text == text }) else { return }
+        record.details[item]?[idx].isChecked.toggle()
+        save()
+    }
+
+    public func details(for item: String) -> [SubItem] {
+        record.details[item] ?? []
     }
 
     public func markClosed(_ closed: Bool) {
@@ -155,6 +191,9 @@ public final class Store: ObservableObject {
             newRecord.windowPosition = saved.windowPosition
             newRecord.boxPosition = saved.boxPosition
             newRecord.isClosed = false
+            // Carry over details for todo+doing items only
+            let carried = Set(saved.todo + saved.doing)
+            newRecord.details = saved.details.filter { carried.contains($0.key) }
             return newRecord
         }
     }

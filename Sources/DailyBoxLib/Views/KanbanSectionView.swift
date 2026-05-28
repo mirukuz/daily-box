@@ -10,11 +10,14 @@ public struct KanbanSectionView: View {
     @State private var newItemText = ""
     @FocusState private var inputFocused: Bool
 
-    public init(section: Section, store: Store, isEditable: Bool = true, record: DayRecord? = nil) {
+    var onDoubleTap: ((String) -> Void)?
+
+    public init(section: Section, store: Store, isEditable: Bool = true, record: DayRecord? = nil, onDoubleTap: ((String) -> Void)? = nil) {
         self.section = section
         self.store = store
         self.isEditable = isEditable
         self.record = record
+        self.onDoubleTap = onDoubleTap
     }
 
     private var items: [String] {
@@ -37,8 +40,15 @@ public struct KanbanSectionView: View {
 
             // Items
             ForEach(items, id: \.self) { item in
-                KanbanItemView(text: item, section: section)
-                    .padding(.horizontal, 6)
+                KanbanItemView(
+                    text: item,
+                    section: section,
+                    onDoubleTap: isEditable ? { onDoubleTap?(item) } : nil,
+                    onRename: isEditable ? { newText in store.renameItem(item, to: newText, in: section) } : nil,
+                    onDelete: isEditable ? { store.removeItem(item, from: section) } : nil,
+                    onMove: isEditable ? { target in store.moveItem(item, from: section, to: target) } : nil
+                )
+                .padding(.horizontal, 6)
             }
 
             // Inline add (today only)

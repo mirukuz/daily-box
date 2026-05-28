@@ -7,6 +7,9 @@ public struct MainView: View {
     var onWeeklySummary: () -> Void
 
     @State private var dayOffset: Int = 0  // 0 = today, -1 = yesterday, etc.
+    @State private var selectedItem: (text: String, section: Section)? = nil
+
+    static let dayOffsetChangedNotification = Notification.Name("DailyBox.DayOffsetChanged")
 
     public init(store: Store, onClose: @escaping () -> Void, onWeeklySummary: @escaping () -> Void) {
         self.store = store
@@ -15,6 +18,16 @@ public struct MainView: View {
     }
 
     public var body: some View {
+        if let sel = selectedItem {
+            ItemDetailView(item: sel.text, section: sel.section, store: store) {
+                selectedItem = nil
+            }
+        } else {
+            kanbanBody
+        }
+    }
+
+    @ViewBuilder private var kanbanBody: some View {
         VStack(spacing: 0) {
             // Header
             HStack(spacing: 4) {
@@ -55,6 +68,13 @@ public struct MainView: View {
             .frame(height: 36)
             .background(Color.white.opacity(0.04))
             .gesture(DragGesture().onChanged { _ in })
+            .onChange(of: dayOffset) { newOffset in
+                NotificationCenter.default.post(
+                    name: MainView.dayOffsetChangedNotification,
+                    object: nil,
+                    userInfo: ["offset": newOffset]
+                )
+            }
 
             Divider()
                 .overlay(Color.white.opacity(0.1))
@@ -70,11 +90,11 @@ public struct MainView: View {
                 let pastRecord = isToday ? nil : store.record(daysAgo: -dayOffset)
 
                 VStack(spacing: 0) {
-                    KanbanSectionView(section: .todo, store: store, isEditable: isToday, record: pastRecord)
+                    KanbanSectionView(section: .todo, store: store, isEditable: isToday, record: pastRecord) { item in selectedItem = (item, .todo) }
                     Divider().overlay(Color.white.opacity(0.06)).padding(.horizontal, 10)
-                    KanbanSectionView(section: .doing, store: store, isEditable: isToday, record: pastRecord)
+                    KanbanSectionView(section: .doing, store: store, isEditable: isToday, record: pastRecord) { item in selectedItem = (item, .doing) }
                     Divider().overlay(Color.white.opacity(0.06)).padding(.horizontal, 10)
-                    KanbanSectionView(section: .done, store: store, isEditable: isToday, record: pastRecord)
+                    KanbanSectionView(section: .done, store: store, isEditable: isToday, record: pastRecord) { item in selectedItem = (item, .done) }
                 }
 
                 if isToday && isFriday {

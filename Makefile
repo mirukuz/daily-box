@@ -14,6 +14,7 @@ bundle: build
 	mkdir -p $(APP_BUNDLE)/Contents/Resources
 	cp $(BUILD_DIR)/$(APP_NAME) $(APP_BUNDLE)/Contents/MacOS/
 	cp Sources/DailyBoxLib/Resources/Info.plist $(APP_BUNDLE)/Contents/
+	cp Sources/DailyBoxLib/Resources/AppIcon.icns $(APP_BUNDLE)/Contents/Resources/
 	printf 'APPL????' > $(APP_BUNDLE)/Contents/PkgInfo
 
 run: bundle

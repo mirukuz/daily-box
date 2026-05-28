@@ -88,6 +88,22 @@ public final class FloatingPanel<Content: View>: NSPanel, AutoResizable {
         DispatchQueue.main.async { [weak self] in
             self?.fitToContent(width: width)
         }
+
+        // Freeze height while browsing past days; thaw and re-fit on return to today.
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("DailyBox.DayOffsetChanged"),
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let self else { return }
+            let offset = note.userInfo?["offset"] as? Int ?? 0
+            if offset == 0 {
+                self.autoResizeEnabled = true
+                self.fitToContent(width: width)
+            } else {
+                self.autoResizeEnabled = false
+            }
+        }
     }
 
     private func fitToContent(width: CGFloat) {
